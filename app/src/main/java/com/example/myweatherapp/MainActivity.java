@@ -1,11 +1,11 @@
 package com.example.myweatherapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -22,14 +22,25 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.material.textfield.TextInputEditText;
+import com.squareup.picasso.Picasso;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public abstract class MainActivity extends AppCompatActivity {
+public abstract class MainActivity<cityName> extends AppCompatActivity {
 
     private RelativeLayout homeRL;
     private ProgressBar loadingPB;
@@ -68,23 +79,43 @@ public abstract class MainActivity extends AppCompatActivity {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION);
         }
-        ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
+        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
     }
 
-    Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-    cityName = getCityName(location.getLongitude(),location.getLatitude());
+    Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
+    cityName =getCityName(location.getLongitude(),location.void getLatitude());
     getWeatherInfo(cityName);
 
-    searchIV.setOnClickListener(new View.OnClickListener){
 
+    searchIV.setOnClickListener(new View.OnClickListener())
+    {
+        @Override
+        public void onClick(View v){
+        String city = cityEdt.getText().toString();
+        if (city.isEmpty()) {
+            Toast.makeText(MainActivity.this, "Plaese enter city name", Toast.LENGTH_SHORT).show();
+        } else {
+            cityNameTV.setText(cityName);
+            getWeatherInfo(city);
+        }
+    }
+    };
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode==PERMISSION_CODE){
+            if (grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this,"Permission granted...",Toast.LENGTH_SHORT).show();
+            }else {
+                Toast.makeText(this, "Please provide the permission", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
     }
 
-
-
-
-
-
-    private String getCityName(double longitude,double latitude){
+    private String getCityName(double longitude, double latitude){
         String cityName = "Not Found";
         Geocoder gcd = new Geocoder(getBaseContext(), Locale.getDefault());
         try {
@@ -110,7 +141,62 @@ public abstract class MainActivity extends AppCompatActivity {
 
     private void getWeatherInfo(String cityName) {
         String url = "http://api.weatherapi.com/v1/forecast.json?key=9a0c6fe84a5c41a0a8e121502221212&q=" + cityName + "&days=1&aqi=yes&alerts=yes";
+        cityNameTV.setText(cityName);
+        RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
 
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                loadingPB.setVisibility(View.GONE);
+                homeRL.setVisibility(View.VISIBLE);
+                weatherRVModalArrayList.clear();
+
+                try {
+                    String temperature = response.getJSONObject("current").getString("temp_c");
+                    temperatureTV.setText(temperature+"°c");
+                    int is_day = response.getJSONObject("current").getInt("is_day");
+                    String condition = response.getJSONObject("current").getJSONObject("condition").getString("texrt");
+                    String conditionIcon = response.getJSONObject("current").getJSONObject("condition").getString("icon");
+                    Picasso.get().load("http:".concat(conditionIcon)).into(iconIV);
+                    conditionTV.setText(condition);
+                    if (is_day==1){
+                        //morning
+                        Picasso.get().load("https://images.pexels.com/photos/11540164/pexels-photo-11540164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1").into(backIV);
+                    }else{
+                        Picasso.get().load("https://w0.peakpx.com/wallpaper/675/448/HD-wallpaper-night-sky-android-mountain-star-galaxy-mountains-nature-dune.jpg").into(backIV);
+                    }
+
+                    JSONObject forecastObj = response.getJSONObject("forecast");
+                    JSONObject forcastO = forecastObj.getJSONArray("forecastday").getJSONObject(0);
+                    JSONArray hourArray = forcastO.toJSONArray("hour");
+
+                    for (int i=0;i<hourArray.length();i++){
+                        JSONObject hourObj = hourArray.getJSONObject(i);
+                        String time = hourObj.getString("time");
+                        String temper = hourObj.getString("temp_c");
+                        String img = hourObj.getJSONObject("condition").getString("icon");
+                        String wind = hourObj.getString("wind_kph");
+                        weatherRVModalArrayList.add(new WeatherRVModal(time,temper,img,wind));
+                    }
+
+                    weatherRVAdapter.notifyDataSetChanged();
+
+
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(MainActivity.this, "Please Enter Valid City Name..", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+
+        requestQueue.add(jsonObjectRequest);
 
     }
 }
