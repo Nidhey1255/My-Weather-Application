@@ -1,10 +1,5 @@
 package com.example.myweatherapp;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -13,7 +8,6 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.CloudMediaProvider;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -23,13 +17,17 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.maps.internal.ILocationSourceDelegate;
 import com.google.android.material.textfield.TextInputEditText;
 import com.squareup.picasso.Picasso;
 
@@ -42,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public abstract class MainActivity<cityName> extends AppCompatActivity {
+public abstract class MainActivity extends AppCompatActivity {
 
     private RelativeLayout homeRL;
     private ProgressBar loadingPB;
@@ -70,9 +68,9 @@ public abstract class MainActivity<cityName> extends AppCompatActivity {
         conditionTV = findViewById(R.id.idTVCondition);
         weatherRV = findViewById(R.id.idRvWeather);
         cityEdt = findViewById(R.id.idEdtCity);
-        backIV = findViewById(R.id.idTVSearch);
+        backIV = findViewById(R.id.idIVBack);
         iconIV = findViewById(R.id.idTVIcon);
-        searchIV = findViewById(R.id.idTVSearch);
+        searchIV = findViewById(R.id.idIVSearch);
         weatherRVModalArrayList = new ArrayList<>();
         weatherRVAdapter = new WeatherRVAdapter(this, weatherRVModalArrayList);
         weatherRV.setAdapter(weatherRVAdapter);
@@ -80,27 +78,27 @@ public abstract class MainActivity<cityName> extends AppCompatActivity {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED);
         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
+
+        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        cityName = getCityName(location.getLongitude(),location.getLatitude());
+        getWeatherInfo(cityName);
+
+        searchIV.setOnClickListener(v -> {
+            String city = cityEdt.getText().toString();
+            if (city.isEmpty()) {
+                Toast.makeText(MainActivity.this, "Please enter city name", Toast.LENGTH_SHORT).show();
+            } else {
+                cityNameTV.setText(cityName);
+                getWeatherInfo(city);
+            }
+        });
+
     }
 
-    Location location = LocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-    cityName = getCityName(location.getLongitude(),location.getLatitude());
-    getWeatherInfo(cityName);
 
 
 
-    searchIV.setOnClickListener(new View.OnClickListener())
-    {
-        @Override
-        public void onClick(View v) {
-        String city = cityEdt.getText().toString();
-        if (city.isEmpty()) {
-            Toast.makeText(MainActivity.this, "Please enter city name", Toast.LENGTH_SHORT).show();
-        } else {
-            cityNameTV.setText(cityName);
-            getWeatherInfo(city);
-        }
-    }
-    };
+
 
 
     @Override
@@ -154,35 +152,33 @@ public abstract class MainActivity<cityName> extends AppCompatActivity {
 
                 try {
                     String temperature = response.getJSONObject("current").getString("temp_c");
-                    temperatureTV.setText(temperature+"°c");
+                    temperatureTV.setText(temperature + "°c");
                     int is_day = response.getJSONObject("current").getInt("is_day");
                     String condition = response.getJSONObject("current").getJSONObject("condition").getString("texrt");
                     String conditionIcon = response.getJSONObject("current").getJSONObject("condition").getString("icon");
                     Picasso.get().load("http:".concat(conditionIcon)).into(iconIV);
                     conditionTV.setText(condition);
-                    if (is_day==1){
+                    if (is_day == 1) {
                         //morning
                         Picasso.get().load("https://images.pexels.com/photos/11540164/pexels-photo-11540164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1").into(backIV);
-                    }else{
+                    } else {
                         Picasso.get().load("https://w0.peakpx.com/wallpaper/675/448/HD-wallpaper-night-sky-android-mountain-star-galaxy-mountains-nature-dune.jpg").into(backIV);
                     }
 
                     JSONObject forecastObj = response.getJSONObject("forecast");
                     JSONObject forcastO = forecastObj.getJSONArray("forecastday").getJSONObject(0);
-                    JSONArray hourArray = forcastO.toJSONArray("hour");
+                    JSONArray hourArray = forcastO.getJSONArray("hour");
 
-                    for (int i=0;i<hourArray.length();i++){
+                    for (int i = 0; i < hourArray.length(); i++) {
                         JSONObject hourObj = hourArray.getJSONObject(i);
                         String time = hourObj.getString("time");
                         String temper = hourObj.getString("temp_c");
                         String img = hourObj.getJSONObject("condition").getString("icon");
                         String wind = hourObj.getString("wind_kph");
-                        weatherRVModalArrayList.add(new WeatherRVModal(time,temper,img,wind));
+                        weatherRVModalArrayList.add(new WeatherRVModal(time, temper, img, wind));
                     }
 
                     weatherRVAdapter.notifyDataSetChanged();
-
-
 
 
                 } catch (JSONException e) {
