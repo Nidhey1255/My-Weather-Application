@@ -13,6 +13,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.CloudMediaProvider;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -28,6 +29,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.maps.internal.ILocationSourceDelegate;
 import com.google.android.material.textfield.TextInputEditText;
 import com.squareup.picasso.Picasso;
 
@@ -76,24 +78,23 @@ public abstract class MainActivity<cityName> extends AppCompatActivity {
         weatherRV.setAdapter(weatherRVAdapter);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED);
         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
     }
 
-    Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
-    cityName =getCityName(location.getLongitude(),location.void getLatitude());
+    Location location = LocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+    cityName = getCityName(location.getLongitude(),location.getLatitude());
     getWeatherInfo(cityName);
+
 
 
     searchIV.setOnClickListener(new View.OnClickListener())
     {
         @Override
-        public void onClick(View v){
+        public void onClick(View v) {
         String city = cityEdt.getText().toString();
         if (city.isEmpty()) {
-            Toast.makeText(MainActivity.this, "Plaese enter city name", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Please enter city name", Toast.LENGTH_SHORT).show();
         } else {
             cityNameTV.setText(cityName);
             getWeatherInfo(city);
