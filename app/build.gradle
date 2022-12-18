@@ -3,25 +3,17 @@ plugins {
 }
 
 android {
-    packagingOptions {
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/NOTICE'
-        exclude 'META-INF/LICENSE'
-        exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/NOTICE.txt'
-        exclude 'META-INF/ASL2.0'
-    }
-
-    compileSdk 33
+   compileSdk 33
 
     defaultConfig {
         applicationId "com.example.myweatherapp"
-        minSdk 21
+        minSdk 26
         targetSdk 33
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -34,6 +26,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    packagingOptions {
+        exclude "META-INF/DEPENDENCIES"
+    }
+
     namespace 'com.example.myweatherapp'
 }
 
@@ -47,7 +43,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.databinding:databinding-compiler-common:7.3.1'
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'junit:junit:5.9.1'
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }

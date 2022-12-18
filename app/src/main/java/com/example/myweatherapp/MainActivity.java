@@ -92,7 +92,6 @@ public abstract class MainActivity extends AppCompatActivity {
                 getWeatherInfo(city);
             }
         });
-
     }
 
 
